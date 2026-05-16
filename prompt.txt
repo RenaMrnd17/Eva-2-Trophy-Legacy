@@ -1,0 +1,471 @@
+Desarrolla una aplicación web profesional, avanzada y altamente optimizada utilizando exclusivamente:
+
+- HTML5 semántico
+- CSS3 moderno
+- JavaScript Vanilla avanzado (sin frameworks)
+
+La entrega debe estar físicamente separada siguiendo buenas prácticas reales:
+
+- index.html
+- styles.css
+- script.js
+- README.md
+
+Cada archivo debe entregarse completo, funcional, correctamente estructurado y ubicado dentro de la misma carpeta raíz del proyecto.
+
+No usar pseudocódigo.
+No omitir lógica.
+No dejar funcionalidades incompletas.
+
+El sistema debe funcionar correctamente desde el primer render.
+
+--------------------------------------------------
+README INDEPENDIENTE OBLIGATORIO
+--------------------------------------------------
+
+El archivo README.md debe generarse aparte dentro de la misma carpeta del proyecto.
+
+Debe estar completamente separado de:
+
+- index.html
+- styles.css
+- script.js
+
+Debe incluir:
+
+- descripción breve del proyecto
+- objetivo académico
+- funcionalidades principales
+- arquitectura aplicada
+- explicación del CRUD
+- explicación sistema multiidioma
+- uso de localStorage
+- validaciones implementadas
+- medidas de seguridad aplicadas
+- documentación de uso de IA
+- razonamiento técnico final
+
+--------------------------------------------------
+ARQUITECTURA OBLIGATORIA
+--------------------------------------------------
+
+La solución debe reflejar estándares reales de programación senior frontend:
+
+- modularidad real
+- separación estricta de responsabilidades
+- mantenibilidad
+- escalabilidad
+- optimización algorítmica
+- eficiencia de renderizado
+- seguridad frontend
+- reutilización avanzada
+- claridad técnica profesional
+
+--------------------------------------------------
+CONTEXTO ACADÉMICO OBLIGATORIO
+--------------------------------------------------
+
+La solución debe cumplir rigurosamente:
+
+✓ Procesamiento avanzado de formularios
+✓ Manipulación dinámica del DOM
+✓ Uso intensivo de arreglos y objetos
+✓ CRUD completo
+✓ Funciones reutilizables
+✓ Validaciones robustas
+✓ Seguridad y prevención XSS
+✓ Comentarios explicativos
+✓ Responsive design
+✓ Uso documentado de IA
+
+Debe maximizar evaluación en:
+
+- Validación de formularios y seguridad
+- Organización eficiente con arreglos/objetos
+- Manipulación dinámica del DOM
+- Funciones reutilizables
+- Creatividad UI/UX
+- Claridad estructural
+- Buen uso documentado de IA
+
+--------------------------------------------------
+PROYECTO
+--------------------------------------------------
+
+Trophy Legacy
+
+Plataforma interactiva premium sobre la historia y evolución de trofeos y logros en videojuegos.
+
+Inspiración visual:
+
+- dashboards modernos premium
+- interfaces tipo Microsoft/Bing
+- diseño gaming elegante
+- paneles corporativos tecnológicos
+
+La plataforma debe representar:
+
+“Un museo digital interactivo que explica de forma clara, breve y visual cómo evolucionaron históricamente los trofeos y logros en videojuegos, permitiendo explorar hitos reales, registrar progreso y analizar la relevancia histórica del ecosistema achievement gaming.”
+
+Antes de construir la interfaz, realizar un análisis rápido interno de coherencia temática para comprender:
+
+- qué representa la página
+- qué comunica visualmente
+- cómo se conectan sus módulos
+- qué hitos históricos reales deben utilizarse
+- cómo mantener precisión narrativa y visual
+
+Toda la interfaz debe construirse a partir de esa comprensión.
+
+La información debe sentirse conectada y basada en evolución histórica real.
+
+Diseño:
+
+- tonos oscuros sofisticados
+- acentos dorados y plateados
+- gradientes suaves
+- glassmorphism ligero
+- tarjetas limpias
+- tipografía moderna
+- sombras sutiles
+
+IMPORTANTE:
+
+La experiencia visual debe ser elegante y atractiva sin saturar al usuario.
+
+Evitar:
+
+- exceso de animaciones
+- ruido gráfico
+- demasiados efectos simultáneos
+- sobrecarga visual
+
+Priorizar:
+
+- claridad
+- jerarquía visual
+- navegación cómoda
+- equilibrio profesional
+
+--------------------------------------------------
+RESPONSIVE DESIGN
+--------------------------------------------------
+
+Adaptación automática para:
+
+- escritorio
+- notebook
+- tablet
+- pantallas medianas
+
+Aplicar:
+
+- CSS Grid
+- Flexbox
+- media queries optimizadas
+- redistribución inteligente
+- sin overflow horizontal
+
+--------------------------------------------------
+SISTEMA MULTIIDIOMA AVANZADO
+--------------------------------------------------
+
+Internacionalización dinámica profesional obligatoria.
+
+Idiomas:
+
+- Español Latinoamérica (por defecto)
+- Inglés
+- Hindi
+
+Debe existir selector elegante de idioma visible.
+
+Toda la interfaz debe traducirse dinámicamente sin recargar.
+
+Traducir:
+
+- títulos
+- subtítulos
+- botones
+- labels
+- placeholders
+- mensajes de validación
+- mensajes toast
+- timeline
+- paneles dinámicos
+- estados contextuales
+
+Arquitectura:
+
+const translations = {
+ es:{},
+ en:{},
+ hi:{}
+}
+
+Implementar:
+
+- cambiarIdioma()
+- aplicarTraducciones()
+- guardarIdioma()
+- restaurarIdioma()
+
+Persistencia mediante localStorage.
+
+Comentarios técnicos obligatorios.
+
+--------------------------------------------------
+MÓDULO 1
+TIMELINE INTERACTIVO
+--------------------------------------------------
+
+Mostrar hitos históricos reales:
+
+- logros arcade tempranos
+- Xbox Achievements
+- PlayStation Trophies
+- Steam Achievements
+- evolución moderna
+
+Cada hito incluye:
+
+- año
+- plataforma
+- descripción
+- relevancia histórica
+
+Interacciones:
+
+- hover elegante
+- expansión dinámica
+- animaciones suaves
+
+CRUD histórico:
+
+- crear
+- visualizar
+- editar
+- eliminar
+
+Renderizado dinámico seguro.
+
+--------------------------------------------------
+MÓDULO 2
+GAMEHUB TRACKER PLUS
+--------------------------------------------------
+
+Formulario avanzado:
+
+- usuario
+- videojuego
+- plataforma
+- horas jugadas
+- nivel alcanzado
+- trofeos desbloqueados
+
+Validaciones robustas:
+
+- regex avanzada
+- sanitización
+- campos obligatorios
+- restricciones semánticas
+- normalización
+- longitud mínima/máxima
+
+Guardar en arreglo de objetos:
+
+{
+ id,
+ usuario,
+ juego,
+ plataforma,
+ horas,
+ nivel,
+ trofeos,
+ fechaRegistro
+}
+
+Logros automáticos:
+
+- Jugador Constante
+- Explorador Avanzado
+- Maestro Persistente
+- Leyenda del Progreso
+
+CRUD completo:
+
+CREATE
+READ
+UPDATE
+DELETE
+
+Persistencia localStorage.
+
+--------------------------------------------------
+MÓDULO 3
+MURO DE TROFEOS MEMORABLES
+--------------------------------------------------
+
+Formulario:
+
+- videojuego
+- logro
+- dificultad
+- descripción
+- rareza
+
+Permitir:
+
+- crear
+- visualizar
+- editar
+- eliminar
+- votar
+- destacar
+- ordenar popularidad
+
+Panel lateral:
+
+ranking global dinámico.
+
+--------------------------------------------------
+SISTEMA TOAST PROFESIONAL
+--------------------------------------------------
+
+Implementar notificaciones flotantes elegantes.
+
+Tipos:
+
+- success
+- error
+- warning
+- info
+
+Ejemplos:
+
+- registro creado
+- edición exitosa
+- eliminación
+- error validación
+- restauración localStorage
+- cambio idioma
+
+Desaparición automática con animación suave.
+
+Implementar:
+
+mostrarToast()
+
+Debe reemplazar completamente alert().
+
+--------------------------------------------------
+SEGURIDAD OBLIGATORIA
+--------------------------------------------------
+
+Nunca usar:
+
+- innerHTML inseguro
+
+Usar:
+
+- createElement()
+- textContent
+- appendChild()
+- sanitización previa estricta
+
+Explicar prevención XSS mediante comentarios críticos.
+
+--------------------------------------------------
+FUNCIONES REUTILIZABLES
+--------------------------------------------------
+
+Implementar:
+
+- validarEntrada()
+- sanitizarTexto()
+- renderizarLista()
+- crearRegistro()
+- editarRegistro()
+- eliminarRegistro()
+- actualizarRanking()
+- guardarEstado()
+- restaurarEstado()
+- calcularLogros()
+- mostrarToast()
+- cambiarIdioma()
+
+Aplicar:
+
+- map()
+- filter()
+- reduce()
+- find()
+- some()
+- every()
+- sort()
+
+--------------------------------------------------
+COMENTARIOS EXPLICATIVOS OBLIGATORIOS
+--------------------------------------------------
+
+Comentar especialmente:
+
+- validaciones críticas
+- sanitización
+- renderizado DOM
+- CRUD
+- localStorage
+- i18n
+- arquitectura modular
+- prevención XSS
+- razonamiento técnico importante
+
+Ejemplo:
+
+“Se usa textContent para prevenir inyección XSS”
+
+“Esta función desacopla renderizado del estado”
+
+“Esta validación evita inconsistencias semánticas”
+
+--------------------------------------------------
+EVIDENCIA IA
+--------------------------------------------------
+
+Agregar comentarios como:
+
+“Validación sugerida inicialmente por IA y optimizada manualmente”
+
+“Refactorización modular propuesta por IA y adaptada para mejorar escalabilidad”
+
+README debe documentar:
+
+- prompts utilizados
+- sugerencias recibidas
+- cambios manuales
+- mejoras implementadas
+- razonamiento técnico final
+
+--------------------------------------------------
+NIVEL EXIGIDO
+--------------------------------------------------
+
+Debe parecer desarrollado por un Senior Frontend Engineer especializado en:
+
+- dashboards interactivos
+- arquitectura modular
+- optimización avanzada
+- experiencia premium
+
+El código debe ser:
+
+- elegante
+- complejo
+- robusto
+- comentado
+- limpio
+- profesional
+- mantenible
+- escalable
+
+Al finalizar explicar brevemente cómo cada criterio académico fue cubierto.

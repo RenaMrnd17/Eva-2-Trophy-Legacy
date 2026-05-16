@@ -1,0 +1,325 @@
+Trophy Legacy — README Técnico
+> Museo digital interactivo sobre la evolución histórica de trofeos y logros en videojuegos.  
+> Stack: \*\*Vanilla JS ES6+ · Bootstrap 5 · CSS Custom Properties · localStorage\*\*
+---
+Tabla de Contenidos
+Arquitectura General
+Estructura de Archivos
+Sistema de Estado (StateManager)
+Módulos JS
+Sistema de Validación
+Internacionalización (i18n)
+Sistema de Temas
+CSS Architecture
+Seguridad y XSS Prevention
+Persistencia de Datos
+Patrones de Diseño Utilizados
+Decisiones Técnicas y Trade-offs
+---
+1. Arquitectura General
+La aplicación es un SPA (Single Page Application) sin framework, implementada con JavaScript vanilla modular. La elección deliberada de no usar React/Vue/Angular responde a dos factores: cero dependencias de build tooling y máximo control sobre el DOM para una app de tamaño acotado.
+```
+┌─────────────────────────────────────────────────────────┐
+│                        index.html                        │
+│         (estructura semántica, secciones, modales)       │
+└────────────────────┬────────────────────────────────────┘
+                     │ carga
+          ┌──────────▼──────────┐
+          │      script.js       │
+          │  ┌───────────────┐  │
+          │  │  StateManager  │  │  ← fuente única de verdad
+          │  │  (Observer)   │  │
+          │  └───────┬───────┘  │
+          │          │ notify() │
+          │  ┌───────▼───────┐  │
+          │  │  Render fns   │  │  ← renderTrackerList, renderTrophyWall…
+          │  └───────────────┘  │
+          │  ┌───────────────┐  │
+          │  │   Validator   │  │  ← validaciones de dominio
+          │  └───────────────┘  │
+          │  ┌───────────────┐  │
+          │  │  i18n / t()   │  │  ← traducciones ES/EN/HI
+          │  └───────────────┘  │
+          └─────────────────────┘
+                     │ lee/escribe
+          ┌──────────▼──────────┐
+          │     localStorage     │
+          │  trophy-legacy:\*     │
+          └─────────────────────┘
+```
+Flujo de datos: unidireccional.  
+`UI event → Validator → StateManager.mutate() → saveToStorage() → notify() → render()`
+---
+2. Estructura de Archivos
+```
+trophy-legacy/
+├── index.html       # Markup semántico. Secciones: platforms, tracker, trophyWall, rankings
+├── styles.css       # CSS puro. Design tokens via Custom Properties. Sin preprocesadores.
+├── script.js        # Toda la lógica JS en un único módulo IIFE-less
+└── README.md
+```
+¿Por qué un solo archivo JS?
+Para una app de este scope (~1500 LOC), un bundle único elimina la complejidad de un sistema de módulos ES (ESM requiere servidor HTTP para `type="module"` en algunos navegadores, o un bundler). El código está organizado mediante comentarios de sección que actúan como separadores lógicos.
+---
+3. Sistema de Estado (StateManager)
+Archivo: `script.js` — clase `StateManager`
+Implementa el patrón Observer para reactividad sin framework. Es la única fuente de verdad de la aplicación.
+Responsabilidades
+Método	Descripción
+`loadFromStorage(key)`	Deserializa desde `localStorage` con try/catch para evitar crashes por datos corruptos
+`saveToStorage(key, data)`	Serializa con manejo de `QuotaExceededError`
+`subscribe(fn)`	Registra un listener; retorna un unsubscriber (closure)
+`notify()`	Dispara todos los listeners registrados
+`addTrophy / updateTrophy / deleteTrophy`	CRUD completo de la Trophy Wall
+`addTrackerSession`	Registra sesiones de juego con timestamps ISO
+`calculateTrackerStats()`	Agrega stats derivadas (no almacenadas, recalculadas on-demand)
+`calculateAchievements()`	Gamificación basada en thresholds de stats
+`getRankings()`	Reduce trophyWall a ranking de usuarios por votos, top 10
+Namespace en localStorage
+Todas las claves usan el prefijo `trophy-legacy:` para evitar colisiones con otras apps en el mismo origen:
+```
+trophy-legacy:trackerSessions
+trophy-legacy:trophyWall
+trophy-legacy:language
+trophy-legacy:theme
+```
+Inicialización defensiva
+```js
+this.milestones = this.loadFromStorage("milestones") || defaultMilestones;
+```
+Si `localStorage` devuelve `null` (primera visita) o datos corruptos (el `try/catch` retorna `null`), el estado cae al dataset por defecto. No hay crash silencioso.
+---
+4. Módulos JS
+El script está dividido en bloques funcionales bien delimitados:
+4.1 Rendering — Trophy Wall (`renderTrophyWall`)
+Genera HTML mediante template literals. El orden de renderizado depende del selector `wallSortBy`:
+`recent` → sort por `fechaRegistro` (ISO string, comparación directa vía `Date`)
+`votes` → sort numérico descendente
+`difficulty` → sort por índice de un map `{brutal:0, hard:1, normal:2, easy:3}`
+Patrón clave: cada re-render destruye y reconstruye el DOM del contenedor, seguido de `attachTrophyEventListeners()` que re-registra los event listeners. Esto es necesario porque los elementos generados dinámicamente no tienen listeners del render anterior.
+> \*\*Trade-off:\*\* Una alternativa más eficiente sería event delegation en el contenedor padre (`trophyWallList`), evitando re-registrar listeners en cada render. Para el volumen de datos actual, la diferencia de performance es despreciable.
+4.2 Tracker (`initTrackerFormListeners`)
+Formulario de registro de sesiones de juego. Valida síncronamente antes de mutar el estado. Al registrar correctamente:
+Llama `stateManager.addTrackerSession(session)`
+`notify()` dispara `renderTrackerStats()` vía suscripción
+`renderTrackerList()` se llama explícitamente post-submit
+El cálculo de logros (`calculateAchievements`) es derivado — no se persiste, se recalcula en cada render de stats. Esto garantiza consistencia sin sincronización adicional.
+4.3 Trophy Wall Form (`initTrophyFormListeners`)
+El botón "Guardar cambios" implementa activación progresiva:
+```js
+function updateTrophySaveBtn() {
+  const allFilled = game.length >= 2 \&\& achievement.length >= 3
+                    \&\& difficulty \&\& rarity \&\& description.length >= 10;
+  btn.disabled = !allFilled;
+  btn.classList.toggle("btn-save--ready", !!allFilled);
+}
+```
+Los listeners de `input` y `change` en cada campo llaman a esta función, produciendo feedback visual inmediato sin debounce (campos de texto cortos, sin problema de performance).
+4.4 Rankings (`renderRankings`)
+Agrega votos por username desde `trophyWall` usando `Array.reduce()` con acumulador. El algoritmo es O(n) sobre el array de trofeos:
+```js
+.reduce((acc, item) => {
+  const existing = acc.find(u => u.username === item.username);
+  if (existing) existing.votes += item.votes;
+  else acc.push({ ...item });
+  return acc;
+}, \[])
+```
+> \*\*Nota:\*\* `acc.find()` dentro de `reduce` hace esto O(n²) en el peor caso. Aceptable para el volumen esperado (<1000 trofeos). Si escala, reemplazar el acumulador array por un `Map<username, votes>`.
+---
+5. Sistema de Validación
+Objeto `Validator` — colección de funciones puras de validación. Cada función retorna `{ valid: boolean, value?, error? }`.
+Validador	Reglas
+`Validator.text(val, min, max)`	trim, longitud, sin etiquetas HTML (regex `/<\[^>]\*>/`)
+`Validator.number(val, min, max)`	`parseFloat`, rango numérico
+`Validator.select(val, allowed\[])`	membership check en array de valores permitidos
+`Validator.username(val)`	regex `^\[a-zA-Z0-9\_-]{2,30}$` — sin espacios ni caracteres especiales
+Flujo de validación en formularios
+```
+1. Capturar valores del DOM
+2. Ejecutar Validator.\*() para cada campo
+3. Colectar errores en objeto { fieldId: errorMsg }
+4. Limpiar error-msgs previos (.error-msg → remove "show")
+5. Si hay errores → mostrar y return (bail early)
+6. Si todo válido → mutar estado
+```
+Este patrón no usa HTML5 constraint validation API (`required`, `pattern`, etc.) como mecanismo primario — los formularios tienen `novalidate`. El control total sobre el feedback de error permite mensajes localizados y estilo consistente.
+---
+6. Internacionalización (i18n)
+Objeto `translations` — mapa plano de `{ lang: { key: string } }`. Soporta ES, EN, HI.
+```js
+function t(key) {
+  return translations\[stateManager.language]?.\[key]
+      || translations.es\[key]  // fallback al español
+      || key;                  // fallback a la clave misma
+}
+```
+La función `applyLanguage(lang)` aplica traducciones de tres formas:
+`data-i18n` → `el.textContent = t(key)`
+`data-i18n-placeholder` → `el.placeholder = t(key)`
+`data-i18n-title` → `el.title = t(key)`
+Tras cambiar idioma, se re-renderizan todos los componentes dinámicos para que el contenido generado por JS también quede traducido.
+> \*\*Limitación conocida:\*\* el sistema no maneja pluralización ni interpolación de variables (ej: "X trofeos"). Para escalar a más idiomas con estas necesidades, considerar `Intl.PluralRules` o una librería como `i18next`.
+---
+7. Sistema de Temas
+Implementado exclusivamente con CSS Custom Properties y el atributo `data-theme` en `<html>`:
+```css
+:root, \[data-theme="dark"]  { --bg-primary: #0b0e1a; --accent: #f0c040; … }
+\[data-theme="light"]        { --bg-primary: #f8fafc; --accent: #c89b00; … }
+```
+El JS solo hace:
+```js
+document.documentElement.setAttribute("data-theme", theme);
+```
+El resto lo maneja la cascade de CSS. Sin clases en el body, sin toggling masivo de estilos. Transición suave vía `transition: background-color 0.3s ease` en `body`.
+El tema seleccionado persiste en `localStorage` y se aplica en la inicialización antes del primer render, evitando el FOUC (Flash of Unstyled Content).
+---
+8. CSS Architecture
+Design Tokens
+Todos los valores de diseño viven como Custom Properties en `:root`:
+```css
+--accent:          #f0c040;   /\* Dorado principal \*/
+--accent-2:        #4fd1c5;   /\* Cian — acciones secundarias \*/
+--accent-3:        #e06060;   /\* Coral — estados de error/peligro \*/
+--shadow:          0 8px 32px rgba(0,0,0,0.55);
+--transition-base: 0.3s ease;
+```
+Esto permite que el sistema de temas funcione cambiando solo el `:root` override, sin duplicar reglas de layout o tipografía.
+Botones con estado progresivo
+El patrón `btn-save` / `btn-save--ready` maneja el estado gris→verde del botón de guardado:
+```css
+.btn-save          { background: #2a2a2a; color: #888; cursor: not-allowed; }
+.btn-save--ready,
+.btn-save:not(:disabled) { background: #1a8a3a; color: #fff; cursor: pointer; }
+```
+La clase `btn-save--ready` se añade desde JS con `classList.toggle`. La pseudo-clase `:not(:disabled)` actúa como fallback en caso de que el atributo `disabled` se elimine directamente.
+Responsive Strategy
+Breakpoints descendentes (mobile-last, no mobile-first) con tres puntos de quiebre:
+`1024px` — colapso de grids de 2 columnas (tracker layout, rankings)
+`768px` — navbar colapsada, stats grid 2×2
+`576px` — stack vertical de form-actions, ajuste de hero
+Scrollbar personalizado
+```css
+::-webkit-scrollbar       { width: 10px; }
+::-webkit-scrollbar-thumb { background: var(--accent-2); border-radius: 5px; }
+```
+Solo afecta Chromium/WebKit. Firefox requeriría `scrollbar-color` y `scrollbar-width` (standard), no implementado aquí.
+---
+9. Seguridad y XSS Prevention
+sanitizeText()
+Toda inserción de contenido generado por el usuario en el DOM pasa por:
+```js
+function sanitizeText(text) {
+  const div = document.createElement("div");
+  div.textContent = text;  // el browser escapa entidades HTML automáticamente
+  return div.innerHTML;    // devuelve el string ya escapado
+}
+```
+Esto convierte `<script>alert(1)</script>` en `\&lt;script\&gt;alert(1)\&lt;/script\&gt;`.
+Validator como segunda línea de defensa
+`Validator.text()` rechaza explícitamente strings que contengan etiquetas HTML:
+```js
+if (/<\[^>]\*>/g.test(trimmed)) return { valid: false, error: "No se permiten etiquetas HTML" };
+```
+Defense in depth: validación en entrada + sanitización en salida.
+innerHTML controlado
+Los template literals en las funciones de render usan `sanitizeText()` en todos los valores que provienen de input de usuario. Los valores hardcodeados (iconos, clases CSS) no se sanitizan porque son strings literales del propio código.
+---
+10. Persistencia de Datos
+```
+localStorage
+└── trophy-legacy:trackerSessions  → TrackerSession\[]
+└── trophy-legacy:trophyWall       → Trophy\[]
+└── trophy-legacy:language         → "es" | "en" | "hi"
+└── trophy-legacy:theme            → "dark" | "light"
+```
+Estructura TrackerSession
+```ts
+{
+  id: number,           // Date.now() — único, monotónico creciente
+  username: string,
+  game: string,
+  platform: string,
+  hours: number,
+  level: number,
+  trophies: number,
+  fechaRegistro: string // ISO 8601
+}
+```
+Estructura Trophy
+```ts
+{
+  id: number,
+  game: string,
+  achievement: string,
+  difficulty: "easy" | "normal" | "hard" | "brutal",
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary",
+  description: string,
+  username: string,
+  votes: number,
+  userVoted: boolean,
+  fechaRegistro: string
+}
+```
+Manejo de errores de storage
+```js
+saveToStorage(key, data) {
+  try {
+    localStorage.setItem(`trophy-legacy:${key}`, JSON.stringify(data));
+  } catch (e) {
+    // QuotaExceededError en navegadores con storage lleno
+    showToast("error", "Storage lleno", "No se pudieron guardar los cambios");
+  }
+}
+```
+---
+11. Patrones de Diseño Utilizados
+Patrón	Dónde	Por qué
+Observer	`StateManager.subscribe / notify`	Desacopla el estado del rendering. El tracker form no sabe que existe un stats panel.
+Strategy	`getTrophies(sortBy)`	El algoritmo de ordenamiento es intercambiable en runtime sin condicionales en el caller.
+Module (IIFE-less)	Todo `script.js`	Organización sin build step. Las funciones son globales al script pero el scope natural del archivo las aísla.
+Factory Method	`StateManager.addTrophy / addTrackerSession`	Centraliza la creación de entidades con defaults (id, fechaRegistro, votes) garantizando consistencia.
+Defensive Programming	`loadFromStorage`, validadores	Fail-safe: el estado siempre tiene un valor coherente, incluso si el storage está corrupto o vacío.
+---
+12. Decisiones Técnicas y Trade-offs
+✅ Vanilla JS sin framework
+Pros: cero dependencias, sin build step, deployable como archivos estáticos, fácil de auditar.  
+Cons: re-renders manuales, no hay virtual DOM, event delegation no implementada consistentemente. Para una app con 10× más features, el costo de mantenimiento superaría el beneficio.
+✅ localStorage como backend
+Pros: offline-first, sin latencia de red, sin servidor.  
+Cons: datos locales al dispositivo/navegador, sin sincronización entre usuarios, límite ~5MB por origen. Si se requiere persistencia real, el `StateManager` es el único punto a modificar: reemplazar `loadFromStorage/saveToStorage` por llamadas a una API REST.
+✅ CSS Custom Properties para theming
+Pros: theming sin JS (solo atributo en `<html>`), cascade nativa, compatible con `prefers-color-scheme` media query.  
+Cons: no soportado en IE11 (irrelevante en 2026).
+⚠️ Re-render completo en cada mutación
+Las funciones `renderTrophyWall()`, `renderTrackerList()` destruyen y recrean el DOM completo en cada llamada. Para listas pequeñas (<100 items) es aceptable. Si el volumen crece, la solución correcta es reconciliación incremental o adoptar un framework.
+⚠️ IDs basados en `Date.now()`
+```js
+id: Date.now()
+```
+Colisión posible si dos registros se crean en el mismo milisegundo (prácticamente imposible en un flujo de usuario, pero no idempotente bajo tests automatizados). La alternativa correcta es `crypto.randomUUID()` (disponible en todos los browsers modernos).
+---
+Comandos de desarrollo
+No hay build step. Abrir directamente en el navegador:
+```bash
+# Opción 1 — Python (cualquier directorio)
+python3 -m http.server 8080
+
+# Opción 2 — Node
+npx serve .
+
+# Opción 3 — VS Code Live Server extension
+# Click derecho en index.html → Open with Live Server
+```
+> \*\*Importante:\*\* abrir `index.html` directamente con `file://` funciona para esta app (no usa `type="module"` ni fetch a rutas relativas), pero algunos navegadores restringen `localStorage` en el protocolo `file://`. Usar siempre un servidor HTTP local.
+---
+Compatibilidad
+Feature	Chrome	Firefox	Safari	Edge
+CSS Custom Properties	✅ 49+	✅ 31+	✅ 9.1+	✅ 15+
+`class` syntax	✅ 49+	✅ 45+	✅ 9+	✅ 13+
+Optional chaining `?.`	✅ 80+	✅ 74+	✅ 13.1+	✅ 80+
+Template literals	✅ 41+	✅ 34+	✅ 9+	✅ 12+
+`localStorage`	✅	✅	✅	✅
+Target mínimo: Chrome/Edge 80+, Firefox 74+, Safari 13.1+. IE11 no soportado.
+---
+Documentación generada para Trophy Legacy v1.0 — 2026
